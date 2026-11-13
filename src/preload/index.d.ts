@@ -3,6 +3,7 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
+  images?: string[]
 }
 
 export interface ChatDelta {

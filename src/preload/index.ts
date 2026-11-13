@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string; images?: string[] }
 type ChatDelta = { streamId: string; content: string }
 type ChatError = { streamId: string; error: string }
 

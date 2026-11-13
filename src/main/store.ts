@@ -15,6 +15,7 @@ export interface StoredMessage {
   conversationId: string
   role: 'user' | 'assistant'
   content: string
+  images?: string[]
   createdAt: number
 }
 
@@ -41,6 +42,7 @@ export function initStore(): void {
       conversation_id TEXT NOT NULL,
       role TEXT NOT NULL,
       content TEXT NOT NULL,
+      images TEXT,
       created_at INTEGER NOT NULL,
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );
@@ -48,6 +50,12 @@ export function initStore(): void {
     CREATE INDEX IF NOT EXISTS idx_messages_conversation
       ON messages(conversation_id, created_at);
   `)
+
+  // 迁移：为旧库补充 images 列
+  const cols = db.prepare('PRAGMA table_info(messages)').all() as Array<{ name: string }>
+  if (!cols.some((c) => c.name === 'images')) {
+    db.exec('ALTER TABLE messages ADD COLUMN images TEXT')
+  }
 }
 
 function getDb(): Database.Database {
@@ -82,19 +90,22 @@ export function deleteConversation(id: string): void {
 }
 
 export function renameConversation(id: string, title: string): void {
-  getDb().prepare('UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?').run(title, Date.now(), id)
+  getDb()
+    .prepare('UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?')
+    .run(title, Date.now(), id)
 }
 
 export function getMessages(conversationId: string): StoredMessage[] {
   const rows = getDb()
     .prepare(
-      'SELECT id, conversation_id, role, content, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at ASC'
+      'SELECT id, conversation_id, role, content, images, created_at FROM messages WHERE conversation_id = ? ORDER BY created_at ASC'
     )
     .all(conversationId) as Array<{
     id: string
     conversation_id: string
     role: string
     content: string
+    images: string | null
     created_at: number
   }>
 
@@ -103,13 +114,14 @@ export function getMessages(conversationId: string): StoredMessage[] {
     conversationId: r.conversation_id,
     role: r.role as 'user' | 'assistant',
     content: r.content,
+    images: r.images ? (JSON.parse(r.images) as string[]) : undefined,
     createdAt: r.created_at
   }))
 }
 
 export function addMessage(
   conversationId: string,
-  message: { id: string; role: 'user' | 'assistant'; content: string }
+  message: { id: string; role: 'user' | 'assistant'; content: string; images?: string[] }
 ): void {
   const database = getDb()
   const isFirst =
@@ -120,10 +132,21 @@ export function addMessage(
     ).c === 0
 
   database
-    .prepare('INSERT INTO messages (id, conversation_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)')
-    .run(message.id, conversationId, message.role, message.content, Date.now())
+    .prepare(
+      'INSERT INTO messages (id, conversation_id, role, content, images, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    )
+    .run(
+      message.id,
+      conversationId,
+      message.role,
+      message.content,
+      message.images ? JSON.stringify(message.images) : null,
+      Date.now()
+    )
 
-  database.prepare('UPDATE conversations SET updated_at = ? WHERE id = ?').run(Date.now(), conversationId)
+  database
+    .prepare('UPDATE conversations SET updated_at = ? WHERE id = ?')
+    .run(Date.now(), conversationId)
 
   // 第一条用户消息自动作为会话标题
   if (isFirst && message.role === 'user') {

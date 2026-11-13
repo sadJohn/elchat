@@ -57,7 +57,12 @@ export function registerChatIpc(): void {
       // 保存最后一条用户消息
       const lastUser = [...messages].reverse().find((m) => m.role === 'user')
       if (lastUser) {
-        addMessage(conversationId, { id: randomUUID(), role: 'user', content: lastUser.content })
+        addMessage(conversationId, {
+          id: randomUUID(),
+          role: 'user',
+          content: lastUser.content,
+          images: lastUser.images
+        })
       }
     }
 

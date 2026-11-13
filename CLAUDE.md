@@ -22,7 +22,7 @@ elchat 是一个 Electron + React + TypeScript 的 AI 对话桌面应用。核�
 |---|---|
 | `src/main/config.ts` | 合并配置：环境变量 > `settings.json` > `config.json` > 默认值 |
 | `src/main/settings.ts` | UI 设置读写，API Key 用 `safeStorage` 加密落盘（`userData/settings.json`） |
-| `src/main/chat/openai.ts` | OpenAI 兼容流式调用 + 错误转中文；代理用 undici `ProxyAgent` |
+| `src/main/chat/openai.ts` | OpenAI 兼容流式调用（含多模态 image_url）+ 错误转中文；代理用 undici `ProxyAgent` |
 | `src/main/chat/ipc.ts` | 全部 IPC 处理 + 消息落库 |
 | `src/main/store.ts` | SQLite schema 与 CRUD（`conversations` / `messages` 表） |
 | `src/renderer/src/hooks/useChat.ts` | 会话列表 + 流式状态管理（核心状态逻辑） |
@@ -38,6 +38,7 @@ elchat 是一个 Electron + React + TypeScript 的 AI 对话桌面应用。核�
 6. **IPC 通道前缀**：`chat:*`、`conversations:*`、`settings:*` 与 `export:*`；preload 里 `subscribe()` 统一封装事件订阅。
 7. **开发环境坑**：在 VSCode/Electron 集成终端跑 `pnpm dev` 若报 `Cannot read properties of undefined (reading 'isPackaged')`，先 `unset ELECTRON_RUN_AS_NODE`（该环境变量会让 Electron 以纯 Node 模式启动）。
 8. Gemini 模型名会随版本停用（如 `gemini-2.5-flash` 已停用，当前可用 `gemini-3.6-flash`），换模型在设置界面或改 `config.json` 的 `model`。
+9. **多模态**：`messages` 表有 `images` 列（TEXT 存 JSON 数组的 base64 data URL，旧库自动 `ALTER TABLE` 迁移）；带图片的用户消息在 `openai.ts` 转成 OpenAI `image_url` content 数组，Gemini 通过 OpenAI 兼容端点支持图片。
 
 ## 常用命令
 

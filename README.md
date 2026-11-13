@@ -12,6 +12,7 @@
 - **多后端支持**：通过 OpenAI 兼容接口接入 Gemini、OpenAI、DeepSeek 等
 - **API Key 管理**：设置界面配置后端，Key 用系统级加密（safeStorage）存储，改后即时生效
 - **对话导出**：导出当前会话为 Markdown / JSON 文件
+- **图片 / 多模态输入**：支持粘贴或选择图片提问（需支持视觉的后端，如 Gemini）
 
 ## 技术栈
 

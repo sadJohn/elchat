@@ -1,10 +1,15 @@
 import OpenAI, { APIError } from 'openai'
+import type {
+  ChatCompletionMessageParam,
+  ChatCompletionContentPart
+} from 'openai/resources/chat/completions'
 import { ProxyAgent, fetch as undiciFetch } from 'undici'
 import { loadConfig } from '../config'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
+  images?: string[]
 }
 
 export interface StreamHandlers {
@@ -67,10 +72,27 @@ export async function streamChat(
 ): Promise<void> {
   const { model } = loadConfig()
   try {
+    // 带图片的用户消息转成 OpenAI 多模态 content 数组（text + image_url）
+    const apiMessages: ChatCompletionMessageParam[] = messages.map(
+      (m): ChatCompletionMessageParam => {
+        if (m.role === 'user' && m.images && m.images.length > 0) {
+          const parts: ChatCompletionContentPart[] = [
+            { type: 'text', text: m.content },
+            ...m.images.map((url): ChatCompletionContentPart => ({
+              type: 'image_url',
+              image_url: { url }
+            }))
+          ]
+          return { role: 'user', content: parts }
+        }
+        return { role: m.role, content: m.content }
+      }
+    )
+
     const stream = await getClient().chat.completions.create(
       {
         model,
-        messages,
+        messages: apiMessages,
         stream: true
       },
       { signal }

@@ -5,8 +5,10 @@ function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
-function toMessages(rows: Array<{ id: string; role: 'user' | 'assistant'; content: string }>): Message[] {
-  return rows.map((m) => ({ id: m.id, role: m.role, content: m.content }))
+function toMessages(
+  rows: Array<{ id: string; role: 'user' | 'assistant'; content: string; images?: string[] }>
+): Message[] {
+  return rows.map((m) => ({ id: m.id, role: m.role, content: m.content, images: m.images }))
 }
 
 interface UseChatResult {
@@ -14,7 +16,7 @@ interface UseChatResult {
   currentId: string | null
   messages: Message[]
   streaming: boolean
-  send: (text: string) => void
+  send: (text: string, images?: string[]) => void
   stop: () => void
   newConversation: () => void
   selectConversation: (id: string) => void
@@ -143,7 +145,7 @@ export function useChat(): UseChatResult {
   const runStream = useCallback(
     (
       conversationId: string,
-      history: Array<{ role: 'user' | 'assistant'; content: string }>,
+      history: Array<{ role: 'user' | 'assistant'; content: string; images?: string[] }>,
       regenerate = false
     ): void => {
       setStreaming(true)
@@ -168,15 +170,19 @@ export function useChat(): UseChatResult {
   )
 
   const send = useCallback(
-    (text: string): void => {
+    (text: string, images?: string[]): void => {
       const trimmed = text.trim()
-      if (!trimmed || streaming || !currentId) return
+      if ((!trimmed && (!images || images.length === 0)) || streaming || !currentId) return
 
-      const userMsg: Message = { id: uid(), role: 'user', content: trimmed }
+      const userMsg: Message = { id: uid(), role: 'user', content: trimmed, images }
       const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
       setMessages((prev) => [...prev, userMsg, assistantMsg])
 
-      const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }))
+      const history = [...messages, userMsg].map((m) => ({
+        role: m.role,
+        content: m.content,
+        images: m.images
+      }))
       runStream(currentId, history)
     },
     [messages, streaming, currentId, runStream]
@@ -191,7 +197,11 @@ export function useChat(): UseChatResult {
     const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
     setMessages([...historyMsgs, assistantMsg])
 
-    const history = historyMsgs.map((m) => ({ role: m.role, content: m.content }))
+    const history = historyMsgs.map((m) => ({
+      role: m.role,
+      content: m.content,
+      images: m.images
+    }))
     runStream(currentId, history, true)
   }, [messages, streaming, currentId, runStream])
 
