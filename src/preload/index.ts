@@ -36,6 +36,9 @@ const api = {
   settings: {
     get: (): Promise<unknown> => ipcRenderer.invoke('settings:get'),
     save: (input: unknown): Promise<unknown> => ipcRenderer.invoke('settings:save', input)
+  },
+  export: {
+    save: (payload: unknown): Promise<unknown> => ipcRenderer.invoke('export:save', payload)
   }
 }
 

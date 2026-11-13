@@ -11,6 +11,7 @@
 - **本地持久化**：会话与消息存入 SQLite（better-sqlite3），重启自动恢复
 - **多后端支持**：通过 OpenAI 兼容接口接入 Gemini、OpenAI、DeepSeek 等
 - **API Key 管理**：设置界面配置后端，Key 用系统级加密（safeStorage）存储，改后即时生效
+- **对话导出**：导出当前会话为 Markdown / JSON 文件
 
 ## 技术栈
 
@@ -113,6 +114,7 @@ IPC 通道：
 - `chat:delta` / `chat:done` / `chat:error` — 主进程 → 渲染层推送
 - `conversations:list` / `create` / `delete` / `rename` / `messages` — 会话管理
 - `settings:get` / `settings:save` — 读取/保存后端配置（Key 脱敏）
+- `export:save` — 保存导出文件（Markdown / JSON）
 
 ## 常见问题
 

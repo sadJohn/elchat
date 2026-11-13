@@ -5,6 +5,7 @@ import { ChatMessage } from './components/ChatMessage'
 import { MessageInput } from './components/MessageInput'
 import { Sidebar } from './components/Sidebar'
 import { SettingsDialog } from './components/SettingsDialog'
+import { ExportButton } from './components/ExportButton'
 import { Button } from './components/ui/button'
 
 function App(): React.JSX.Element {
@@ -20,6 +21,7 @@ function App(): React.JSX.Element {
     selectConversation,
     removeConversation
   } = useChat()
+  const currentTitle = conversations.find((c) => c.id === currentId)?.title ?? '对话'
   const bottomRef = useRef<HTMLDivElement>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -40,14 +42,21 @@ function App(): React.JSX.Element {
       <div className="flex flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
           <span className="text-sm font-semibold">elchat</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="设置"
-          >
-            <Settings className="size-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <ExportButton
+              title={currentTitle}
+              messages={messages}
+              disabled={messages.length === 0 || streaming}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="设置"
+            >
+              <Settings className="size-4" />
+            </Button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-4">

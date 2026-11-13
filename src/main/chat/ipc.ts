@@ -1,5 +1,6 @@
-import { ipcMain, BrowserWindow } from 'electron'
+import { ipcMain, BrowserWindow, dialog } from 'electron'
 import { randomUUID } from 'crypto'
+import { writeFileSync } from 'fs'
 import { streamChat, resetClient, type ChatMessage } from './openai'
 import { isConfigured, reloadConfig } from '../config'
 import { getSettingsView, saveSettings, type SettingsInput } from '../settings'
@@ -96,6 +97,25 @@ export function registerChatIpc(): void {
     reloadConfig()
     resetClient()
   })
+
+  // 导出对话
+  ipcMain.handle(
+    'export:save',
+    async (
+      event,
+      payload: { content: string; defaultName: string; filterName: string; extensions: string[] }
+    ) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (!win) throw new Error('无法获取窗口')
+      const result = await dialog.showSaveDialog(win, {
+        defaultPath: payload.defaultName,
+        filters: [{ name: payload.filterName, extensions: payload.extensions }]
+      })
+      if (result.canceled || !result.filePath) return null
+      writeFileSync(result.filePath, payload.content, 'utf-8')
+      return result.filePath
+    }
+  )
 
   ipcMain.on('chat:abort', (_event, streamId: string) => {
     activeStreams.get(streamId)?.abort()

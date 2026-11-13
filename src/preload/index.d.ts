@@ -70,6 +70,15 @@ export interface SettingsApi {
   save: (input: SettingsInput) => Promise<void>
 }
 
+export interface ExportApi {
+  save: (payload: {
+    content: string
+    defaultName: string
+    filterName: string
+    extensions: string[]
+  }) => Promise<string | null>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -77,6 +86,7 @@ declare global {
       chat: ChatApi
       conversations: ConversationsApi
       settings: SettingsApi
+      export: ExportApi
     }
   }
 }

@@ -35,7 +35,7 @@ elchat 是一个 Electron + React + TypeScript 的 AI 对话桌面应用。核�
 3. **better-sqlite3 是原生模块**，必须匹配 Electron ABI：`pnpm exec electron-builder install-app-deps` 重建。
 4. **渲染层路径别名**：`@` → `src/renderer/src`（electron.vite.config.ts 与 tsconfig.web.json 两处都要配）。
 5. **数据库文件**在 `app.getPath('userData')/elchat.db`，WAL 模式；schema 见 `store.ts`。
-6. **IPC 通道前缀**：`chat:*`、`conversations:*` 与 `settings:*`；preload 里 `subscribe()` 统一封装事件订阅。
+6. **IPC 通道前缀**：`chat:*`、`conversations:*`、`settings:*` 与 `export:*`；preload 里 `subscribe()` 统一封装事件订阅。
 7. **开发环境坑**：在 VSCode/Electron 集成终端跑 `pnpm dev` 若报 `Cannot read properties of undefined (reading 'isPackaged')`，先 `unset ELECTRON_RUN_AS_NODE`（该环境变量会让 Electron 以纯 Node 模式启动）。
 8. Gemini 模型名会随版本停用（如 `gemini-2.5-flash` 已停用，当前可用 `gemini-3.6-flash`），换模型在设置界面或改 `config.json` 的 `model`。
 
