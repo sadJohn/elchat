@@ -15,12 +15,35 @@ export interface ChatError {
   error: string
 }
 
+export interface Conversation {
+  id: string
+  title: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface StoredMessage {
+  id: string
+  conversationId: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: number
+}
+
 export interface ChatApi {
-  start: (messages: ChatMessage[]) => Promise<string>
+  start: (payload: { conversationId: string; messages: ChatMessage[] }) => Promise<string>
   abort: (streamId: string) => void
   onDelta: (cb: (e: ChatDelta) => void) => () => void
   onDone: (cb: (e: ChatDelta) => void) => () => void
   onError: (cb: (e: ChatError) => void) => () => void
+}
+
+export interface ConversationsApi {
+  list: () => Promise<Conversation[]>
+  create: (title?: string) => Promise<Conversation>
+  remove: (id: string) => Promise<void>
+  messages: (id: string) => Promise<StoredMessage[]>
+  rename: (id: string, title: string) => Promise<void>
 }
 
 declare global {
@@ -28,6 +51,7 @@ declare global {
     electron: ElectronAPI
     api: {
       chat: ChatApi
+      conversations: ConversationsApi
     }
   }
 }

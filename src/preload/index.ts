@@ -1,42 +1,34 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-type ChatMessage = {
-  role: 'system' | 'user' | 'assistant'
-  content: string
-}
-
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
 type ChatDelta = { streamId: string; content: string }
 type ChatError = { streamId: string; error: string }
 
+function subscribe<T>(channel: string, cb: (e: T) => void): () => void {
+  const listener = (_event: IpcRendererEvent, payload: T): void => cb(payload)
+  ipcRenderer.on(channel, listener)
+  return () => {
+    ipcRenderer.removeListener(channel, listener)
+  }
+}
+
 const api = {
   chat: {
-    start: (messages: ChatMessage[]): Promise<string> => ipcRenderer.invoke('chat:start', messages),
+    start: (payload: { conversationId: string; messages: ChatMessage[] }): Promise<string> =>
+      ipcRenderer.invoke('chat:start', payload),
     abort: (streamId: string): void => ipcRenderer.send('chat:abort', streamId),
-
-    onDelta: (cb: (e: ChatDelta) => void): (() => void) => {
-      const listener = (_event: IpcRendererEvent, payload: ChatDelta): void => cb(payload)
-      ipcRenderer.on('chat:delta', listener)
-      return () => {
-        ipcRenderer.removeListener('chat:delta', listener)
-      }
-    },
-
-    onDone: (cb: (e: ChatDelta) => void): (() => void) => {
-      const listener = (_event: IpcRendererEvent, payload: ChatDelta): void => cb(payload)
-      ipcRenderer.on('chat:done', listener)
-      return () => {
-        ipcRenderer.removeListener('chat:done', listener)
-      }
-    },
-
-    onError: (cb: (e: ChatError) => void): (() => void) => {
-      const listener = (_event: IpcRendererEvent, payload: ChatError): void => cb(payload)
-      ipcRenderer.on('chat:error', listener)
-      return () => {
-        ipcRenderer.removeListener('chat:error', listener)
-      }
-    }
+    onDelta: (cb: (e: ChatDelta) => void): (() => void) => subscribe('chat:delta', cb),
+    onDone: (cb: (e: ChatDelta) => void): (() => void) => subscribe('chat:done', cb),
+    onError: (cb: (e: ChatError) => void): (() => void) => subscribe('chat:error', cb)
+  },
+  conversations: {
+    list: (): Promise<unknown> => ipcRenderer.invoke('conversations:list'),
+    create: (title?: string): Promise<unknown> => ipcRenderer.invoke('conversations:create', title),
+    remove: (id: string): Promise<unknown> => ipcRenderer.invoke('conversations:delete', id),
+    messages: (id: string): Promise<unknown> => ipcRenderer.invoke('conversations:messages', id),
+    rename: (id: string, title: string): Promise<unknown> =>
+      ipcRenderer.invoke('conversations:rename', id, title)
   }
 }
 

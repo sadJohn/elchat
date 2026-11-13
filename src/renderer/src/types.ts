@@ -7,3 +7,10 @@ export interface Message {
   streaming?: boolean
   error?: string
 }
+
+export interface Conversation {
+  id: string
+  title: string
+  createdAt: number
+  updatedAt: number
+}

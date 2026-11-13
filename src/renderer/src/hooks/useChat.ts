@@ -1,25 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Message } from '../types'
+import type { Conversation, Message } from '../types'
 
 function uid(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
 }
 
+function toMessages(rows: Array<{ id: string; role: 'user' | 'assistant'; content: string }>): Message[] {
+  return rows.map((m) => ({ id: m.id, role: m.role, content: m.content }))
+}
+
 interface UseChatResult {
+  conversations: Conversation[]
+  currentId: string | null
   messages: Message[]
   streaming: boolean
   send: (text: string) => void
   stop: () => void
+  newConversation: () => void
+  selectConversation: (id: string) => void
+  removeConversation: (id: string) => void
 }
 
 export function useChat(): UseChatResult {
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [currentId, setCurrentId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [streaming, setStreaming] = useState(false)
   const streamIdRef = useRef<string | null>(null)
+  const initializedRef = useRef(false)
 
+  const refreshConversations = useCallback(async (): Promise<void> => {
+    setConversations(await window.api.conversations.list())
+  }, [])
+
+  // 订阅主进程推送的流式事件
   useEffect(() => {
     const offDelta = window.api.chat.onDelta(({ streamId, content }) => {
-      // 绑定首个到达的流，避免与 start 返回的 streamId 产生竞态
       if (streamIdRef.current !== null && streamIdRef.current !== streamId) return
       streamIdRef.current = streamId
       setMessages((prev) => {
@@ -42,6 +58,7 @@ export function useChat(): UseChatResult {
         next[next.length - 1] = { ...last, streaming: false }
         return next
       })
+      void refreshConversations()
     })
 
     const offError = window.api.chat.onError(({ streamId, error }) => {
@@ -62,12 +79,70 @@ export function useChat(): UseChatResult {
       offDone()
       offError()
     }
+  }, [refreshConversations])
+
+  // 初始化：加载会话列表，恢复最近会话或新建
+  useEffect(() => {
+    if (initializedRef.current) return
+    initializedRef.current = true
+
+    void (async () => {
+      const list = await window.api.conversations.list()
+      setConversations(list)
+      if (list.length > 0) {
+        const first = list[0]
+        setCurrentId(first.id)
+        setMessages(toMessages(await window.api.conversations.messages(first.id)))
+      } else {
+        const conv = await window.api.conversations.create()
+        setConversations([conv])
+        setCurrentId(conv.id)
+      }
+    })()
   }, [])
+
+  const newConversation = useCallback(async (): Promise<void> => {
+    if (streaming) return
+    const conv = await window.api.conversations.create()
+    setConversations((prev) => [conv, ...prev])
+    setCurrentId(conv.id)
+    setMessages([])
+  }, [streaming])
+
+  const selectConversation = useCallback(
+    async (id: string): Promise<void> => {
+      if (streaming || id === currentId) return
+      setCurrentId(id)
+      setMessages(toMessages(await window.api.conversations.messages(id)))
+    },
+    [streaming, currentId]
+  )
+
+  const removeConversation = useCallback(
+    async (id: string): Promise<void> => {
+      await window.api.conversations.remove(id)
+      const rest = conversations.filter((c) => c.id !== id)
+      setConversations(rest)
+
+      if (currentId === id) {
+        if (rest.length > 0) {
+          setCurrentId(rest[0].id)
+          setMessages(toMessages(await window.api.conversations.messages(rest[0].id)))
+        } else {
+          const conv = await window.api.conversations.create()
+          setConversations([conv])
+          setCurrentId(conv.id)
+          setMessages([])
+        }
+      }
+    },
+    [conversations, currentId]
+  )
 
   const send = useCallback(
     (text: string): void => {
       const trimmed = text.trim()
-      if (!trimmed || streaming) return
+      if (!trimmed || streaming || !currentId) return
 
       const userMsg: Message = { id: uid(), role: 'user', content: trimmed }
       const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
@@ -77,7 +152,7 @@ export function useChat(): UseChatResult {
 
       setStreaming(true)
       window.api.chat
-        .start(history)
+        .start({ conversationId: currentId, messages: history })
         .then((streamId) => {
           if (streamIdRef.current === null) streamIdRef.current = streamId
         })
@@ -93,7 +168,7 @@ export function useChat(): UseChatResult {
           })
         })
     },
-    [messages, streaming]
+    [messages, streaming, currentId]
   )
 
   const stop = useCallback((): void => {
@@ -111,5 +186,15 @@ export function useChat(): UseChatResult {
     })
   }, [])
 
-  return { messages, streaming, send, stop }
+  return {
+    conversations,
+    currentId,
+    messages,
+    streaming,
+    send,
+    stop,
+    newConversation,
+    selectConversation,
+    removeConversation
+  }
 }
