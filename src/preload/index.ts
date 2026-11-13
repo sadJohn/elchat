@@ -31,7 +31,9 @@ const api = {
     remove: (id: string): Promise<unknown> => ipcRenderer.invoke('conversations:delete', id),
     messages: (id: string): Promise<unknown> => ipcRenderer.invoke('conversations:messages', id),
     rename: (id: string, title: string): Promise<unknown> =>
-      ipcRenderer.invoke('conversations:rename', id, title)
+      ipcRenderer.invoke('conversations:rename', id, title),
+    setSystemPrompt: (id: string, prompt: string): Promise<unknown> =>
+      ipcRenderer.invoke('conversations:setSystemPrompt', id, prompt)
   },
   settings: {
     get: (): Promise<unknown> => ipcRenderer.invoke('settings:get'),

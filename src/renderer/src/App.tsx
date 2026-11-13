@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { Settings } from 'lucide-react'
+import { Bot, Settings } from 'lucide-react'
 import { useChat } from './hooks/useChat'
 import { ChatMessage } from './components/ChatMessage'
 import { MessageInput } from './components/MessageInput'
 import { Sidebar } from './components/Sidebar'
 import { SettingsDialog } from './components/SettingsDialog'
+import { SystemPromptDialog } from './components/SystemPromptDialog'
 import { ExportButton } from './components/ExportButton'
 import { Button } from './components/ui/button'
 
@@ -19,11 +20,15 @@ function App(): React.JSX.Element {
     regenerate,
     newConversation,
     selectConversation,
-    removeConversation
+    removeConversation,
+    renameConversation,
+    setSystemPrompt
   } = useChat()
-  const currentTitle = conversations.find((c) => c.id === currentId)?.title ?? '对话'
+  const currentConv = conversations.find((c) => c.id === currentId)
+  const currentTitle = currentConv?.title ?? '对话'
   const bottomRef = useRef<HTMLDivElement>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [promptOpen, setPromptOpen] = useState(false)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -37,12 +42,21 @@ function App(): React.JSX.Element {
         onSelect={selectConversation}
         onNew={newConversation}
         onRemove={removeConversation}
+        onRename={renameConversation}
       />
 
       <div className="flex flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
           <span className="text-sm font-semibold">elchat</span>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setPromptOpen(true)}
+              aria-label="系统提示词"
+            >
+              <Bot className="size-4" />
+            </Button>
             <ExportButton
               title={currentTitle}
               messages={messages}
@@ -89,6 +103,12 @@ function App(): React.JSX.Element {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SystemPromptDialog
+        open={promptOpen}
+        onClose={() => setPromptOpen(false)}
+        initialPrompt={currentConv?.systemPrompt ?? ''}
+        onSave={setSystemPrompt}
+      />
     </div>
   )
 }

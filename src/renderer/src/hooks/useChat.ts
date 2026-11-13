@@ -22,6 +22,8 @@ interface UseChatResult {
   selectConversation: (id: string) => void
   removeConversation: (id: string) => void
   regenerate: () => void
+  renameConversation: (id: string, title: string) => void
+  setSystemPrompt: (prompt: string) => Promise<void>
 }
 
 export function useChat(): UseChatResult {
@@ -145,7 +147,7 @@ export function useChat(): UseChatResult {
   const runStream = useCallback(
     (
       conversationId: string,
-      history: Array<{ role: 'user' | 'assistant'; content: string; images?: string[] }>,
+      history: Array<{ role: 'system' | 'user' | 'assistant'; content: string; images?: string[] }>,
       regenerate = false
     ): void => {
       setStreaming(true)
@@ -169,6 +171,22 @@ export function useChat(): UseChatResult {
     []
   )
 
+  const renameConversation = useCallback(async (id: string, title: string): Promise<void> => {
+    await window.api.conversations.rename(id, title)
+    setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)))
+  }, [])
+
+  const setSystemPrompt = useCallback(
+    async (prompt: string): Promise<void> => {
+      if (!currentId) return
+      await window.api.conversations.setSystemPrompt(currentId, prompt)
+      setConversations((prev) =>
+        prev.map((c) => (c.id === currentId ? { ...c, systemPrompt: prompt } : c))
+      )
+    },
+    [currentId]
+  )
+
   const send = useCallback(
     (text: string, images?: string[]): void => {
       const trimmed = text.trim()
@@ -178,14 +196,15 @@ export function useChat(): UseChatResult {
       const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
       setMessages((prev) => [...prev, userMsg, assistantMsg])
 
-      const history = [...messages, userMsg].map((m) => ({
-        role: m.role,
-        content: m.content,
-        images: m.images
-      }))
+      const systemPrompt = conversations.find((c) => c.id === currentId)?.systemPrompt
+      const history = [
+        ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+        ...messages.map((m) => ({ role: m.role, content: m.content, images: m.images })),
+        { role: 'user' as const, content: trimmed, images }
+      ]
       runStream(currentId, history)
     },
-    [messages, streaming, currentId, runStream]
+    [messages, streaming, currentId, conversations, runStream]
   )
 
   const regenerate = useCallback((): void => {
@@ -197,13 +216,13 @@ export function useChat(): UseChatResult {
     const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
     setMessages([...historyMsgs, assistantMsg])
 
-    const history = historyMsgs.map((m) => ({
-      role: m.role,
-      content: m.content,
-      images: m.images
-    }))
+    const systemPrompt = conversations.find((c) => c.id === currentId)?.systemPrompt
+    const history = [
+      ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+      ...historyMsgs.map((m) => ({ role: m.role, content: m.content, images: m.images }))
+    ]
     runStream(currentId, history, true)
-  }, [messages, streaming, currentId, runStream])
+  }, [messages, streaming, currentId, conversations, runStream])
 
   const stop = useCallback((): void => {
     if (streamIdRef.current !== null) {
@@ -230,6 +249,8 @@ export function useChat(): UseChatResult {
     regenerate,
     newConversation,
     selectConversation,
-    removeConversation
+    removeConversation,
+    renameConversation,
+    setSystemPrompt
   }
 }

@@ -26,7 +26,7 @@ elchat 是一个 Electron + React + TypeScript 的 AI 对话桌面应用。核�
 | `src/main/chat/ipc.ts` | 全部 IPC 处理 + 消息落库 |
 | `src/main/store.ts` | SQLite schema 与 CRUD（`conversations` / `messages` 表） |
 | `src/renderer/src/hooks/useChat.ts` | 会话列表 + 流式状态管理（核心状态逻辑） |
-| `src/renderer/src/components/` | Sidebar / ChatMessage / Markdown / MessageInput / SettingsDialog / ui |
+| `src/renderer/src/components/` | Sidebar / ChatMessage / Markdown / MessageInput / SettingsDialog / SystemPromptDialog / ExportButton / ui |
 
 ## 关键约定与坑
 
@@ -39,6 +39,7 @@ elchat 是一个 Electron + React + TypeScript 的 AI 对话桌面应用。核�
 7. **开发环境坑**：在 VSCode/Electron 集成终端跑 `pnpm dev` 若报 `Cannot read properties of undefined (reading 'isPackaged')`，先 `unset ELECTRON_RUN_AS_NODE`（该环境变量会让 Electron 以纯 Node 模式启动）。
 8. Gemini 模型名会随版本停用（如 `gemini-2.5-flash` 已停用，当前可用 `gemini-3.6-flash`），换模型在设置界面或改 `config.json` 的 `model`。
 9. **多模态**：`messages` 表有 `images` 列（TEXT 存 JSON 数组的 base64 data URL，旧库自动 `ALTER TABLE` 迁移）；带图片的用户消息在 `openai.ts` 转成 OpenAI `image_url` content 数组，Gemini 通过 OpenAI 兼容端点支持图片。
+10. **系统提示词**：会话级 `conversations.system_prompt` 列（旧库自动迁移）；`useChat` 构造 history 时把它作为 `system` 消息置顶传入。
 
 ## 常用命令
 

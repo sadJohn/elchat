@@ -10,6 +10,7 @@ import {
   createConversation,
   deleteConversation,
   renameConversation,
+  updateSystemPrompt,
   getMessages,
   addMessage,
   deleteLastAssistantMessage
@@ -32,6 +33,9 @@ export function registerChatIpc(): void {
   ipcMain.handle('conversations:delete', (_event, id: string) => deleteConversation(id))
   ipcMain.handle('conversations:rename', (_event, id: string, title: string) =>
     renameConversation(id, title)
+  )
+  ipcMain.handle('conversations:setSystemPrompt', (_event, id: string, prompt: string) =>
+    updateSystemPrompt(id, prompt)
   )
   ipcMain.handle('conversations:messages', (_event, id: string) => getMessages(id))
 

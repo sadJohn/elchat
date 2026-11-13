@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto'
 export interface Conversation {
   id: string
   title: string
+  systemPrompt?: string
   createdAt: number
   updatedAt: number
 }
@@ -33,6 +34,7 @@ export function initStore(): void {
     CREATE TABLE IF NOT EXISTS conversations (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL DEFAULT '新对话',
+      system_prompt TEXT NOT NULL DEFAULT '',
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
@@ -56,6 +58,12 @@ export function initStore(): void {
   if (!cols.some((c) => c.name === 'images')) {
     db.exec('ALTER TABLE messages ADD COLUMN images TEXT')
   }
+
+  // 迁移：为旧库补充 system_prompt 列
+  const convCols = db.prepare('PRAGMA table_info(conversations)').all() as Array<{ name: string }>
+  if (!convCols.some((c) => c.name === 'system_prompt')) {
+    db.exec("ALTER TABLE conversations ADD COLUMN system_prompt TEXT NOT NULL DEFAULT ''")
+  }
 }
 
 function getDb(): Database.Database {
@@ -65,23 +73,40 @@ function getDb(): Database.Database {
 
 export function listConversations(): Conversation[] {
   const rows = getDb()
-    .prepare('SELECT id, title, created_at, updated_at FROM conversations ORDER BY updated_at DESC')
-    .all() as Array<{ id: string; title: string; created_at: number; updated_at: number }>
+    .prepare(
+      'SELECT id, title, system_prompt, created_at, updated_at FROM conversations ORDER BY updated_at DESC'
+    )
+    .all() as Array<{
+    id: string
+    title: string
+    system_prompt: string
+    created_at: number
+    updated_at: number
+  }>
 
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
+    systemPrompt: r.system_prompt,
     createdAt: r.created_at,
     updatedAt: r.updated_at
   }))
 }
 
-export function createConversation(title = '新对话'): Conversation {
+export function createConversation(title = '新对话', systemPrompt = ''): Conversation {
   const now = Date.now()
-  const conv: Conversation = { id: randomUUID(), title, createdAt: now, updatedAt: now }
+  const conv: Conversation = {
+    id: randomUUID(),
+    title,
+    systemPrompt,
+    createdAt: now,
+    updatedAt: now
+  }
   getDb()
-    .prepare('INSERT INTO conversations (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)')
-    .run(conv.id, conv.title, conv.createdAt, conv.updatedAt)
+    .prepare(
+      'INSERT INTO conversations (id, title, system_prompt, created_at, updated_at) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(conv.id, conv.title, systemPrompt, conv.createdAt, conv.updatedAt)
   return conv
 }
 
@@ -93,6 +118,12 @@ export function renameConversation(id: string, title: string): void {
   getDb()
     .prepare('UPDATE conversations SET title = ?, updated_at = ? WHERE id = ?')
     .run(title, Date.now(), id)
+}
+
+export function updateSystemPrompt(id: string, systemPrompt: string): void {
+  getDb()
+    .prepare('UPDATE conversations SET system_prompt = ?, updated_at = ? WHERE id = ?')
+    .run(systemPrompt, Date.now(), id)
 }
 
 export function getMessages(conversationId: string): StoredMessage[] {

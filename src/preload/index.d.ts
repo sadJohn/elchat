@@ -19,6 +19,7 @@ export interface ChatError {
 export interface Conversation {
   id: string
   title: string
+  systemPrompt?: string
   createdAt: number
   updatedAt: number
 }
@@ -49,6 +50,7 @@ export interface ConversationsApi {
   remove: (id: string) => Promise<void>
   messages: (id: string) => Promise<StoredMessage[]>
   rename: (id: string, title: string) => Promise<void>
+  setSystemPrompt: (id: string, prompt: string) => Promise<void>
 }
 
 export interface SettingsView {

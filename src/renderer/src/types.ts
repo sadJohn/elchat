@@ -12,6 +12,7 @@ export interface Message {
 export interface Conversation {
   id: string
   title: string
+  systemPrompt?: string
   createdAt: number
   updatedAt: number
 }
