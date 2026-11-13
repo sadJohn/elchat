@@ -1,0 +1,6 @@
+{
+  "apiKey": "在此填入 API Key",
+  "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/",
+  "model": "gemini-3.6-flash",
+  "proxy": "http://127.0.0.1:7994"
+}
