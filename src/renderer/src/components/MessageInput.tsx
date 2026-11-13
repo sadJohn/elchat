@@ -84,7 +84,7 @@ export function MessageInput({ streaming, onSend, onStop }: MessageInputProps): 
         </div>
       )}
 
-      <div className="flex items-end gap-2">
+      <div className="flex items-center gap-2">
         <input
           ref={fileRef}
           type="file"

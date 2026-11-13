@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bot, Settings } from 'lucide-react'
+import { Bot, Moon, Settings, Sun } from 'lucide-react'
 import { useChat } from './hooks/useChat'
+import { useTheme } from './hooks/useTheme'
 import { ChatMessage } from './components/ChatMessage'
 import { MessageInput } from './components/MessageInput'
 import { Sidebar } from './components/Sidebar'
@@ -24,6 +25,7 @@ function App(): React.JSX.Element {
     renameConversation,
     setSystemPrompt
   } = useChat()
+  const { theme, toggleTheme } = useTheme()
   const currentConv = conversations.find((c) => c.id === currentId)
   const currentTitle = currentConv?.title ?? '对话'
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -49,6 +51,9 @@ function App(): React.JSX.Element {
         <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
           <span className="text-sm font-semibold">elchat</span>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="切换主题">
+              {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </Button>
             <Button
               variant="ghost"
               size="icon"
