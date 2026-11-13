@@ -44,7 +44,7 @@ export function friendlyError(err: unknown): string {
   if (err instanceof APIError) {
     switch (err.status) {
       case 401:
-        return 'API Key 无效或已过期，请检查 config.json 中的 apiKey'
+        return 'API Key 无效或已过期，请在设置中检查'
       case 402:
         return '账户余额不足（402）'
       case 429:

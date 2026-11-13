@@ -1,8 +1,15 @@
 import type { Message } from '../types'
 import { Markdown } from './Markdown'
+import { Button } from './ui/button'
+import { RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-export function ChatMessage({ message }: { message: Message }): React.JSX.Element {
+interface ChatMessageProps {
+  message: Message
+  onRegenerate?: () => void
+}
+
+export function ChatMessage({ message, onRegenerate }: ChatMessageProps): React.JSX.Element {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
@@ -14,7 +21,7 @@ export function ChatMessage({ message }: { message: Message }): React.JSX.Elemen
   }
 
   return (
-    <div className="flex justify-start">
+    <div className="flex flex-col items-start gap-1">
       <div
         className={cn(
           'max-w-[85%] rounded-2xl px-4 py-2 text-sm',
@@ -34,6 +41,18 @@ export function ChatMessage({ message }: { message: Message }): React.JSX.Elemen
           <span className="text-muted-foreground">思考中…</span>
         ) : null}
       </div>
+
+      {onRegenerate && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRegenerate}
+          className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+        >
+          <RefreshCw className="size-3.5" />
+          {message.error ? '重试' : '重新生成'}
+        </Button>
+      )}
     </div>
   )
 }

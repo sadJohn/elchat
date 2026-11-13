@@ -10,7 +10,8 @@ import {
   deleteConversation,
   renameConversation,
   getMessages,
-  addMessage
+  addMessage,
+  deleteLastAssistantMessage
 } from '../store'
 
 const activeStreams = new Map<string, AbortController>()
@@ -18,6 +19,7 @@ const activeStreams = new Map<string, AbortController>()
 interface ChatStartPayload {
   conversationId: string
   messages: ChatMessage[]
+  regenerate?: boolean
 }
 
 export function registerChatIpc(): void {
@@ -35,10 +37,10 @@ export function registerChatIpc(): void {
   // 流式对话
   ipcMain.handle('chat:start', async (event, payload: ChatStartPayload) => {
     if (!isConfigured()) {
-      throw new Error('尚未配置 API Key，请在 config.json 中填写 apiKey')
+      throw new Error('尚未配置 API Key，请在右上角设置中填写')
     }
 
-    const { conversationId, messages } = payload
+    const { conversationId, messages, regenerate } = payload
 
     const streamId = randomUUID()
     const controller = new AbortController()
@@ -47,10 +49,15 @@ export function registerChatIpc(): void {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) throw new Error('无法获取窗口')
 
-    // 保存最后一条用户消息
-    const lastUser = [...messages].reverse().find((m) => m.role === 'user')
-    if (lastUser) {
-      addMessage(conversationId, { id: randomUUID(), role: 'user', content: lastUser.content })
+    if (regenerate) {
+      // 重新生成：删除旧的最后一条 AI 回复，用户消息已在库中，不重复保存
+      deleteLastAssistantMessage(conversationId)
+    } else {
+      // 保存最后一条用户消息
+      const lastUser = [...messages].reverse().find((m) => m.role === 'user')
+      if (lastUser) {
+        addMessage(conversationId, { id: randomUUID(), role: 'user', content: lastUser.content })
+      }
     }
 
     void streamChat(

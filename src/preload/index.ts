@@ -15,8 +15,11 @@ function subscribe<T>(channel: string, cb: (e: T) => void): () => void {
 
 const api = {
   chat: {
-    start: (payload: { conversationId: string; messages: ChatMessage[] }): Promise<string> =>
-      ipcRenderer.invoke('chat:start', payload),
+    start: (payload: {
+      conversationId: string
+      messages: ChatMessage[]
+      regenerate?: boolean
+    }): Promise<string> => ipcRenderer.invoke('chat:start', payload),
     abort: (streamId: string): void => ipcRenderer.send('chat:abort', streamId),
     onDelta: (cb: (e: ChatDelta) => void): (() => void) => subscribe('chat:delta', cb),
     onDone: (cb: (e: ChatDelta) => void): (() => void) => subscribe('chat:done', cb),

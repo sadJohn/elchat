@@ -131,3 +131,11 @@ export function addMessage(
     database.prepare('UPDATE conversations SET title = ? WHERE id = ?').run(title, conversationId)
   }
 }
+
+export function deleteLastAssistantMessage(conversationId: string): void {
+  getDb()
+    .prepare(
+      "DELETE FROM messages WHERE id = (SELECT id FROM messages WHERE conversation_id = ? AND role = 'assistant' ORDER BY created_at DESC LIMIT 1)"
+    )
+    .run(conversationId)
+}

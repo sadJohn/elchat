@@ -15,6 +15,7 @@ function App(): React.JSX.Element {
     streaming,
     send,
     stop,
+    regenerate,
     newConversation,
     selectConversation,
     removeConversation
@@ -56,8 +57,16 @@ function App(): React.JSX.Element {
                 开始对话吧，输入消息并按 Enter 发送
               </div>
             )}
-            {messages.map((m) => (
-              <ChatMessage key={m.id} message={m} />
+            {messages.map((m, i) => (
+              <ChatMessage
+                key={m.id}
+                message={m}
+                onRegenerate={
+                  i === messages.length - 1 && m.role === 'assistant' && !m.streaming
+                    ? regenerate
+                    : undefined
+                }
+              />
             ))}
             <div ref={bottomRef} />
           </div>

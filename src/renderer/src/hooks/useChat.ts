@@ -19,6 +19,7 @@ interface UseChatResult {
   newConversation: () => void
   selectConversation: (id: string) => void
   removeConversation: (id: string) => void
+  regenerate: () => void
 }
 
 export function useChat(): UseChatResult {
@@ -139,20 +140,15 @@ export function useChat(): UseChatResult {
     [conversations, currentId]
   )
 
-  const send = useCallback(
-    (text: string): void => {
-      const trimmed = text.trim()
-      if (!trimmed || streaming || !currentId) return
-
-      const userMsg: Message = { id: uid(), role: 'user', content: trimmed }
-      const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
-      setMessages((prev) => [...prev, userMsg, assistantMsg])
-
-      const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }))
-
+  const runStream = useCallback(
+    (
+      conversationId: string,
+      history: Array<{ role: 'user' | 'assistant'; content: string }>,
+      regenerate = false
+    ): void => {
       setStreaming(true)
       window.api.chat
-        .start({ conversationId: currentId, messages: history })
+        .start({ conversationId, messages: history, regenerate })
         .then((streamId) => {
           if (streamIdRef.current === null) streamIdRef.current = streamId
         })
@@ -168,8 +164,36 @@ export function useChat(): UseChatResult {
           })
         })
     },
-    [messages, streaming, currentId]
+    []
   )
+
+  const send = useCallback(
+    (text: string): void => {
+      const trimmed = text.trim()
+      if (!trimmed || streaming || !currentId) return
+
+      const userMsg: Message = { id: uid(), role: 'user', content: trimmed }
+      const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
+      setMessages((prev) => [...prev, userMsg, assistantMsg])
+
+      const history = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }))
+      runStream(currentId, history)
+    },
+    [messages, streaming, currentId, runStream]
+  )
+
+  const regenerate = useCallback((): void => {
+    if (streaming || !currentId) return
+    const last = messages[messages.length - 1]
+    if (!last || last.role !== 'assistant') return
+
+    const historyMsgs = messages.slice(0, -1)
+    const assistantMsg: Message = { id: uid(), role: 'assistant', content: '', streaming: true }
+    setMessages([...historyMsgs, assistantMsg])
+
+    const history = historyMsgs.map((m) => ({ role: m.role, content: m.content }))
+    runStream(currentId, history, true)
+  }, [messages, streaming, currentId, runStream])
 
   const stop = useCallback((): void => {
     if (streamIdRef.current !== null) {
@@ -193,6 +217,7 @@ export function useChat(): UseChatResult {
     streaming,
     send,
     stop,
+    regenerate,
     newConversation,
     selectConversation,
     removeConversation

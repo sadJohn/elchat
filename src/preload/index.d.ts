@@ -31,7 +31,11 @@ export interface StoredMessage {
 }
 
 export interface ChatApi {
-  start: (payload: { conversationId: string; messages: ChatMessage[] }) => Promise<string>
+  start: (payload: {
+    conversationId: string
+    messages: ChatMessage[]
+    regenerate?: boolean
+  }) => Promise<string>
   abort: (streamId: string) => void
   onDelta: (cb: (e: ChatDelta) => void) => () => void
   onDone: (cb: (e: ChatDelta) => void) => () => void
