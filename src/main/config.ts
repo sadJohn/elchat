@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { loadUiSettings } from './settings'
 
 export interface AppConfig {
   apiKey: string
@@ -37,15 +38,22 @@ export function loadConfig(): AppConfig {
   if (cached) return cached
 
   const file = readConfigFile()
+  // 优先级：环境变量 > UI 设置（settings.json）> config.json（兜底）> 默认值
+  const ui = loadUiSettings()
 
   cached = {
-    apiKey: process.env.OPENAI_API_KEY ?? file.apiKey ?? '',
-    baseURL: process.env.OPENAI_BASE_URL ?? file.baseURL ?? DEFAULT_BASE_URL,
-    model: process.env.OPENAI_MODEL ?? file.model ?? DEFAULT_MODEL,
-    proxy: file.proxy
+    apiKey: process.env.OPENAI_API_KEY ?? (ui.apiKey || file.apiKey || ''),
+    baseURL: process.env.OPENAI_BASE_URL ?? (ui.baseURL || file.baseURL || DEFAULT_BASE_URL),
+    model: process.env.OPENAI_MODEL ?? (ui.model || file.model || DEFAULT_MODEL),
+    proxy: ui.proxy || file.proxy
   }
 
   return cached
+}
+
+export function reloadConfig(): void {
+  cached = null
+  loadConfig()
 }
 
 export function isConfigured(): boolean {

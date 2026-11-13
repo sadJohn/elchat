@@ -9,6 +9,7 @@
 - **多会话管理**：侧边栏新建 / 切换 / 删除会话
 - **本地持久化**：会话与消息存入 SQLite（better-sqlite3），重启自动恢复
 - **多后端支持**：通过 OpenAI 兼容接口接入 Gemini、OpenAI、DeepSeek 等
+- **API Key 管理**：设置界面配置后端，Key 用系统级加密（safeStorage）存储，改后即时生效
 
 ## 技术栈
 
@@ -26,7 +27,8 @@ elchat/
 ├── src/
 │   ├── main/                    # 主进程（Node）
 │   │   ├── index.ts             # 窗口/生命周期，注册 IPC
-│   │   ├── config.ts            # 读取 config.json 配置
+│   │   ├── config.ts            # 合并配置（env > settings.json > config.json）
+│   │   ├── settings.ts          # UI 设置读写，API Key 加密存储
 │   │   ├── store.ts             # SQLite 存储层
 │   │   └── chat/
 │   │       ├── openai.ts        # OpenAI 兼容流式调用
@@ -56,6 +58,8 @@ pnpm install
 > 首次安装后会自动将原生模块（better-sqlite3）rebuild 到 Electron ABI。若缺失，手动执行 `pnpm exec electron-builder install-app-deps`。
 
 ### 配置
+
+也可以在应用内右上角「设置」里直接配置（推荐），API Key 会加密存储、改后即时生效。`config.json` 作为首次启动的兜底。
 
 ```bash
 cp config.example.json config.json
@@ -89,7 +93,7 @@ pnpm build:linux    # 打包 Linux 应用
 
 ## 架构说明
 
-应用采用 Electron 三进程架构，**API Key 只存在于主进程**，渲染层通过 preload 暴露的类型安全 IPC 通信，永远接触不到密钥。
+应用采用 Electron 三进程架构，**API Key 只存在于主进程**，渲染层通过 preload 暴露的类型安全 IPC 通信，永远接触不到密钥。在设置界面保存的 Key 会用 `safeStorage`（macOS Keychain / Windows DPAPI）加密后存入 `userData/settings.json`，渲染层只能读取脱敏的后 4 位。
 
 ```
 渲染层 (React)
@@ -107,6 +111,7 @@ IPC 通道：
 - `chat:start` / `chat:abort` — 开始/停止流式对话
 - `chat:delta` / `chat:done` / `chat:error` — 主进程 → 渲染层推送
 - `conversations:list` / `create` / `delete` / `rename` / `messages` — 会话管理
+- `settings:get` / `settings:save` — 读取/保存后端配置（Key 脱敏）
 
 ## 常见问题
 

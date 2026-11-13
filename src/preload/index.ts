@@ -29,6 +29,10 @@ const api = {
     messages: (id: string): Promise<unknown> => ipcRenderer.invoke('conversations:messages', id),
     rename: (id: string, title: string): Promise<unknown> =>
       ipcRenderer.invoke('conversations:rename', id, title)
+  },
+  settings: {
+    get: (): Promise<unknown> => ipcRenderer.invoke('settings:get'),
+    save: (input: unknown): Promise<unknown> => ipcRenderer.invoke('settings:save', input)
   }
 }
 

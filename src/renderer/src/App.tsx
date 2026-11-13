@@ -1,8 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Settings } from 'lucide-react'
 import { useChat } from './hooks/useChat'
 import { ChatMessage } from './components/ChatMessage'
 import { MessageInput } from './components/MessageInput'
 import { Sidebar } from './components/Sidebar'
+import { SettingsDialog } from './components/SettingsDialog'
+import { Button } from './components/ui/button'
 
 function App(): React.JSX.Element {
   const {
@@ -17,6 +20,7 @@ function App(): React.JSX.Element {
     removeConversation
   } = useChat()
   const bottomRef = useRef<HTMLDivElement>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -33,8 +37,16 @@ function App(): React.JSX.Element {
       />
 
       <div className="flex flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center border-b px-4">
+        <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
           <span className="text-sm font-semibold">elchat</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="设置"
+          >
+            <Settings className="size-4" />
+          </Button>
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-4">
@@ -57,6 +69,8 @@ function App(): React.JSX.Element {
           </div>
         </footer>
       </div>
+
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )
 }

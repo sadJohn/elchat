@@ -36,6 +36,10 @@ function getClient(): OpenAI {
   return client
 }
 
+export function resetClient(): void {
+  client = null
+}
+
 export function friendlyError(err: unknown): string {
   if (err instanceof APIError) {
     switch (err.status) {

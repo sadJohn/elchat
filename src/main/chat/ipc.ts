@@ -1,7 +1,8 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { randomUUID } from 'crypto'
-import { streamChat, type ChatMessage } from './openai'
-import { isConfigured } from '../config'
+import { streamChat, resetClient, type ChatMessage } from './openai'
+import { isConfigured, reloadConfig } from '../config'
+import { getSettingsView, saveSettings, type SettingsInput } from '../settings'
 import {
   initStore,
   listConversations,
@@ -79,6 +80,14 @@ export function registerChatIpc(): void {
     )
 
     return streamId
+  })
+
+  // 设置（API Key 管理）
+  ipcMain.handle('settings:get', () => getSettingsView())
+  ipcMain.handle('settings:save', (_event, input: SettingsInput) => {
+    saveSettings(input)
+    reloadConfig()
+    resetClient()
   })
 
   ipcMain.on('chat:abort', (_event, streamId: string) => {

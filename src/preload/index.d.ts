@@ -46,12 +46,33 @@ export interface ConversationsApi {
   rename: (id: string, title: string) => Promise<void>
 }
 
+export interface SettingsView {
+  baseURL: string
+  model: string
+  proxy: string
+  hasApiKey: boolean
+  apiKeyMasked: string
+}
+
+export interface SettingsInput {
+  baseURL: string
+  model: string
+  proxy: string
+  apiKey?: string
+}
+
+export interface SettingsApi {
+  get: () => Promise<SettingsView>
+  save: (input: SettingsInput) => Promise<void>
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
     api: {
       chat: ChatApi
       conversations: ConversationsApi
+      settings: SettingsApi
     }
   }
 }
